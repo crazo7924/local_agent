@@ -2,6 +2,15 @@
 
 This project provides a simple, self-contained local agent system powered by a local Large Language Model (LLM) through [Ollama](https://ollama.com/). The agent is capable of interacting with your local machine to perform tasks like reading files, listing directories, and launching applications. The entire system is exposed via a REST API built with FastAPI.
 
+## Codebase Architecture
+
+The project is structured into modular components inside `src/`:
+
+- `main.py`: The entry point for running the FastAPI application.
+- `src/config.py`: Contains configuration settings (e.g. LLM model name).
+- `src/tools.py`: Defines tools available to the LLM agent (`read_file`, `list_directory`, `launch_app`).
+- `src/agent.py`: Contains the core LLM execution loop (`run_agent_loop`).
+
 ## Features
 
 -   **Local LLM Interaction**: Leverages Ollama to run an LLM agent entirely on your local machine.
@@ -10,7 +19,7 @@ This project provides a simple, self-contained local agent system powered by a l
     -   `list_directory`: Lists the contents of a directory.
     -   `launch_app`: Launches common desktop applications (e.g., Chrome, VSCode, Terminal).
 -   **API-Driven**: A FastAPI server exposes the agent's capabilities, allowing for easy integration with other applications.
--   **Simple & Extensible**: The core logic is straightforward, making it easy to understand, modify, and extend with new tools.
+-   **Simple & Extensible**: The core logic is modular and easy to understand, modify, and extend with new tools.
 
 ## Requirements
 
@@ -33,7 +42,7 @@ This project provides a simple, self-contained local agent system powered by a l
     ```
 
 3.  **Setup Ollama:**
-    Ensure the Ollama application is running. Then, pull the model specified in `main.py`:
+    Ensure the Ollama application is running. Then, pull the model specified in `src/config.py`:
     ```bash
     ollama pull llama3.2:latest
     ```
@@ -44,6 +53,12 @@ To start the FastAPI server, run the following command in the project root:
 
 ```bash
 uvicorn main:app --host "0.0.0.0" --port 8000
+```
+
+Or execute directly with Python:
+
+```bash
+python main.py
 ```
 
 The server will be accessible at `http://localhost:8000`.
