@@ -1,6 +1,6 @@
 # Local Agent
 
-This project provides a simple, self-contained local agent system supporting multiple Large Language Model (LLM) providers (such as Ollama, OpenAI, Anthropic, Gemini, llama.cpp, and Dummy/Mock providers). The agent is capable of interacting with your local machine to perform tasks like reading files, listing directories, and launching applications. The entire system is exposed via a REST API built with FastAPI.
+This project provides a simple, self-contained local agent system supporting multiple Large Language Model (LLM) providers (such as Ollama, OpenAI, Anthropic, Gemini, and llama.cpp). The agent is capable of interacting with your local machine to perform tasks like reading files, listing directories, and launching applications. The entire system is exposed via a REST API built with FastAPI.
 
 ## Codebase Architecture
 
@@ -9,12 +9,12 @@ The project is structured into modular components inside `src/`:
 - `main.py`: The entry point for running the FastAPI application.
 - `src/config.py`: Contains configuration settings (e.g., default LLM model name).
 - `src/agent.py`: Contains the core LLM execution loop (`run_agent_loop`).
-- `src/providers/`: Modular LLM provider integrations (`ollama`, `openai`, `anthropic`, `gemini`, `llamacpp`, `dummy`).
+- `src/providers/`: Modular LLM provider integrations (`ollama`, `openai`, `anthropic`, `gemini`, `llamacpp`).
 - `src/tools/`: Tool definitions and implementations (`read_file`, `list_directory`, `launch_app`).
 
 ## Features
 
--   **Multi-Provider LLM Support**: Supports multiple LLM backends including Ollama, OpenAI, Anthropic, Gemini, llama.cpp, and Dummy/Mock implementations.
+-   **Multi-Provider LLM Support**: Supports multiple LLM backends including Ollama, OpenAI, Anthropic, Gemini, and llama.cpp.
 -   **Flexible Configuration**: Select active providers dynamically using the `LLM_PROVIDER` environment variable.
 -   **Tool-Enabled**: The agent can use a predefined set of tools to interact with the operating system.
     -   `read_file`: Reads the content of a specified file.
