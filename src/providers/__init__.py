@@ -2,21 +2,17 @@
 
 from typing import Type
 
+from src.providers.anthropic import AnthropicProvider
 from src.providers.base import LLMProvider
-from src.providers.providers import (
-    AnthropicProvider,
-    DummyProvider,
-    GeminiProvider,
-    LlamaCppProvider,
-    MockProvider,
-    OllamaProvider,
-    OpenAIProvider,
-)
+from src.providers.dummy import DummyProvider, MockProvider
+from src.providers.gemini import GeminiProvider
+from src.providers.llamacpp import LlamaCppProvider
+from src.providers.ollama import OllamaProvider
+from src.providers.openai import OpenAIProvider
 from src.providers.types import ChatMessage, LLMResponse, ProviderHealth, ToolCall
 
 PROVIDERS: dict[str, Type[LLMProvider]] = {
     "dummy": DummyProvider,
-    "mock": MockProvider,
     "ollama": OllamaProvider,
     "openai": OpenAIProvider,
     "anthropic": AnthropicProvider,
@@ -28,6 +24,9 @@ PROVIDERS: dict[str, Type[LLMProvider]] = {
 
 def get_provider(name: str = "dummy", **kwargs) -> LLMProvider:
     """Factory function to instantiate an LLM provider by name."""
+    if name.lower() == "mock":
+        return MockProvider(**kwargs)
+
     provider_cls = PROVIDERS.get(name.lower())
     if not provider_cls:
         raise ValueError(
