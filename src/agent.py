@@ -3,7 +3,13 @@
 import ollama
 
 from src.config import MODEL_NAME
-from src.tools import available_tools, launch_app, list_directory, read_file
+from src.tools import (
+    available_tools,
+    launch_app,
+    list_directory,
+    list_path_executables,
+    read_file,
+)
 
 
 def run_agent_loop(user_prompt: str) -> str:
@@ -24,7 +30,7 @@ def run_agent_loop(user_prompt: str) -> str:
         response = ollama.chat(
             model=MODEL_NAME,
             messages=messages,
-            tools=[read_file, launch_app, list_directory],
+            tools=[read_file, launch_app, list_directory, list_path_executables],
         )
 
         message = response["message"]
