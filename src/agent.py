@@ -1,18 +1,18 @@
 """LLM Agent execution loop."""
 
-import ollama
-
-from src.config import MODEL_NAME
+from src.providers import DummyProvider, LLMProvider
 from src.tools import (
     available_tools,
     launch_app,
     list_directory,
-    list_path_executables,
     read_file,
 )
 
 
-def run_agent_loop(user_prompt: str) -> str:
+def run_agent_loop(
+    user_prompt: str,
+    provider: LLMProvider = DummyProvider(),
+) -> str:
     """The 'Brain' of the agent.
 
     It enters a loop:
@@ -27,20 +27,27 @@ def run_agent_loop(user_prompt: str) -> str:
 
     # Max turns to prevent infinite loops
     for _ in range(5):
-        response = ollama.chat(
-            model=MODEL_NAME,
+        response = provider.chat(
             messages=messages,
-            tools=[read_file, launch_app, list_directory, list_path_executables],
+            tools=[read_file, launch_app, list_directory],
         )
 
-        message = response["message"]
-        messages.append(message)  # Add assistant's thought to history
+        content = response.content
+        tool_calls = response.tool_calls
+
+        # Append assistant message history
+        assistant_msg: dict = {"role": "assistant"}
+        if content:
+            assistant_msg["content"] = content
+        if tool_calls:
+            assistant_msg["tool_calls"] = [tc.model_dump(exclude_none=True) for tc in tool_calls]
+        messages.append(assistant_msg)
 
         # CASE A: The Model wants to call tools
-        if message.get("tool_calls"):
-            for tool in message["tool_calls"]:
-                func_name = tool["function"]["name"]
-                args = tool["function"]["arguments"]
+        if tool_calls:
+            for tool in tool_calls:
+                func_name = tool.name
+                args = tool.arguments
 
                 print(f"🛠️  Agent calling tool: {func_name} with {args}")
 
@@ -52,15 +59,16 @@ def run_agent_loop(user_prompt: str) -> str:
                     tool_output = "Error: Tool not found"
 
                 # Add tool output to chat history so the model knows what happened
-                messages.append(
-                    {
-                        "role": "tool",
-                        "content": str(tool_output),
-                    }
-                )
+                tool_msg = {
+                    "role": "tool",
+                    "content": str(tool_output),
+                }
+                if tool.id:
+                    tool_msg["tool_call_id"] = tool.id
+                messages.append(tool_msg)
 
         # CASE B: The Model simply replied (no tools needed)
         else:
-            return message["content"]
+            return content or ""
 
     return "Agent stopped: Max iterations reached."
