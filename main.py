@@ -22,7 +22,7 @@ class AgentRequest(BaseModel):
 
 
 @app.post("/agent/chat")
-async def agent_chat(request: AgentRequest):
+def agent_chat(request: AgentRequest):
     response = run_agent_loop(request.prompt, provider=active_provider)
     return {"response": response}
 
