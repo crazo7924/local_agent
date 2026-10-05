@@ -3,7 +3,7 @@ import os
 import unittest
 from unittest.mock import MagicMock, patch
 
-from src.tools.executables import PackageManager, _query_rpm, list_path_executables
+from src.tools.executables import PackageManager, _query_dnf, _query_rpm, list_path_executables
 
 
 class TestListPathExecutables(unittest.TestCase):
@@ -86,6 +86,43 @@ class TestListPathExecutables(unittest.TestCase):
         mapping = _query_rpm(binaries)
 
         self.assertEqual(mapping, {"/bin/ls": "coreutils"})
+
+    @patch("shutil.which")
+    @patch("subprocess.run")
+    def test_query_dnf_parsing(self, mock_subprocess_run, mock_which):
+        def which_side_effect(cmd):
+            if cmd == "rpm":
+                return None
+            if cmd == "dnf":
+                return "/usr/bin/dnf"
+            return None
+
+        mock_which.side_effect = which_side_effect
+
+        mock_res = MagicMock()
+        mock_res.returncode = 0
+        mock_res.stdout = "coreutils\t/bin/ls /bin/cat\n"
+        mock_subprocess_run.return_value = mock_res
+
+        binaries = ["/bin/ls", "/bin/unmanaged_bin"]
+        mapping = _query_dnf(binaries, chunk_size=2)
+
+        self.assertEqual(mapping, {"/bin/ls": "coreutils"})
+        mock_subprocess_run.assert_called_once_with(
+            [
+                "dnf",
+                "repoquery",
+                "--installed",
+                "--file",
+                "/bin/ls",
+                "--file",
+                "/bin/unmanaged_bin",
+                "--queryformat",
+                "%{name}\t%{files}",
+            ],
+            capture_output=True,
+            text=True,
+        )
 
 
 if __name__ == "__main__":
