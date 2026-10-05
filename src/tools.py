@@ -1,6 +1,7 @@
 """Tools available to the LLM agent."""
 
 import os
+import shlex
 import subprocess
 
 
@@ -50,10 +51,11 @@ def launch_app(application_name: str, args: str) -> str:
     }
 
     command = app_map.get(application_name.lower(), application_name)
-    command_with_args = command + " " + args
 
     try:
-        subprocess.Popen(command_with_args, shell=True, start_new_session=True)
+        parsed_args = shlex.split(args) if args else []
+        cmd_list = [command] + parsed_args
+        subprocess.Popen(cmd_list, shell=False, start_new_session=True)
         return f"Successfully launched {application_name} (PID: running in background)."
     except Exception as e:
         return f"Failed to launch {application_name}: {str(e)}"
