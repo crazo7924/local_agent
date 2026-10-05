@@ -71,7 +71,7 @@ def _query_rpm(binaries: List[str]) -> Dict[str, str]:
     return mapping
 
 
-def _query_dnf(binaries: List[str]) -> Dict[str, str]:
+def _query_dnf(binaries: List[str], chunk_size: int = 500) -> Dict[str, str]:
     """Query package manager for RPM-based systems (using fast rpm query first if available)."""
     if shutil.which("rpm"):
         return _query_rpm(binaries)
@@ -80,29 +80,39 @@ def _query_dnf(binaries: List[str]) -> Dict[str, str]:
     if not shutil.which("dnf") or not binaries:
         return mapping
 
-    chunk_size = 50
     for i in range(0, len(binaries), chunk_size):
         chunk = binaries[i : i + chunk_size]
+        chunk_set = set(chunk)
+        cmd = ["dnf", "repoquery", "--installed"]
         for bin_path in chunk:
-            try:
-                res = subprocess.run(
-                    [
-                        "dnf",
-                        "repoquery",
-                        "--installed",
-                        "--file",
-                        bin_path,
-                        "--queryformat",
-                        "%{name}",
-                    ],
-                    capture_output=True,
-                    text=True,
-                )
-                pkg = res.stdout.strip()
-                if res.returncode == 0 and pkg:
-                    mapping[bin_path] = pkg
-            except Exception:
-                pass
+            cmd.extend(["--file", bin_path])
+        cmd.extend(["--queryformat", "%{name}\t%{files}"])
+
+        try:
+            res = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+            )
+            if res.returncode == 0 and res.stdout:
+                current_pkg = None
+                for line in res.stdout.splitlines():
+                    line_str = line.strip()
+                    if not line_str:
+                        continue
+                    if "\t" in line_str:
+                        parts = line_str.split("\t", 1)
+                        current_pkg = parts[0].strip()
+                        rest = parts[1].strip()
+                        for token in rest.split():
+                            if token in chunk_set and current_pkg:
+                                mapping[token] = current_pkg
+                    elif current_pkg:
+                        for token in line_str.split():
+                            if token in chunk_set:
+                                mapping[token] = current_pkg
+        except Exception:
+            pass
     return mapping
 
 
