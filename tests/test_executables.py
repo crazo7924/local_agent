@@ -7,6 +7,12 @@ from src.tools.executables import PackageManager, _query_rpm, list_path_executab
 
 
 class TestListPathExecutables(unittest.TestCase):
+    def setUp(self):
+        list_path_executables.cache_clear()
+
+    def tearDown(self):
+        list_path_executables.cache_clear()
+
     def test_list_path_executables_format(self):
         result_str = list_path_executables(package_manager="none")
         result = json.loads(result_str)
@@ -86,6 +92,59 @@ class TestListPathExecutables(unittest.TestCase):
         mapping = _query_rpm(binaries)
 
         self.assertEqual(mapping, {"/bin/ls": "coreutils"})
+
+    def test_caching_behavior_and_hits(self):
+        with patch("os.listdir", return_value=["app1"]):
+            with patch("os.path.isdir", return_value=True):
+                with patch("os.path.isfile", return_value=True):
+                    with patch("os.access", return_value=True):
+                        res1 = list_path_executables("none")
+                        res2 = list_path_executables("none")
+
+                        self.assertEqual(res1, res2)
+
+        info = list_path_executables.cache_info()
+        self.assertGreaterEqual(info.hits, 1)
+
+    def test_argument_case_insensitivity_shares_cache(self):
+        with patch("os.listdir", return_value=["app1"]):
+            with patch("os.path.isdir", return_value=True):
+                with patch("os.path.isfile", return_value=True):
+                    with patch("os.access", return_value=True):
+                        res1 = list_path_executables("NONE")
+                        res2 = list_path_executables("none")
+
+                        self.assertEqual(res1, res2)
+
+        info = list_path_executables.cache_info()
+        self.assertGreaterEqual(info.hits, 1)
+
+    def test_path_change_invalidates_cache(self):
+        with patch("os.listdir", return_value=["app1"]):
+            with patch("os.path.isdir", return_value=True):
+                with patch("os.path.isfile", return_value=True):
+                    with patch("os.access", return_value=True):
+                        with patch.dict(os.environ, {"PATH": "/dir1"}):
+                            list_path_executables("none")
+
+                        with patch.dict(os.environ, {"PATH": "/dir2"}):
+                            list_path_executables("none")
+
+        info = list_path_executables.cache_info()
+        self.assertEqual(info.misses, 2)
+
+    def test_explicit_cache_clear(self):
+        with patch("os.listdir", return_value=["app1"]):
+            with patch("os.path.isdir", return_value=True):
+                with patch("os.path.isfile", return_value=True):
+                    with patch("os.access", return_value=True):
+                        list_path_executables("none")
+                        info_before = list_path_executables.cache_info()
+                        self.assertEqual(info_before.currsize, 1)
+
+                        list_path_executables.cache_clear()
+                        info_after = list_path_executables.cache_info()
+                        self.assertEqual(info_after.currsize, 0)
 
 
 if __name__ == "__main__":

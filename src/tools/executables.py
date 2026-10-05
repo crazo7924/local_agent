@@ -1,3 +1,4 @@
+import functools
 import json
 import os
 import shutil
@@ -143,23 +144,10 @@ def _detect_package_manager() -> Optional[PackageManager]:
     return None
 
 
-def list_path_executables(package_manager: str = "auto") -> str:
-    """Exposes executables in the system PATH variable in a machine readable JSON format,
+@functools.cache
+def _list_path_executables_cached(package_manager_str: str, path_env: str) -> str:
+    pm_enum = PackageManager(package_manager_str)
 
-    categorizing binaries into managed (installed via package manager) and unmanaged files.
-
-    Args:
-        package_manager: Package manager to query ("auto", "apt", "dnf", "dpkg", "rpm", "pacman", or "none").
-
-    Returns:
-        JSON string containing "managed" list of {"package": ..., "binary": ...} and "unmanaged" list of binary paths.
-    """
-    try:
-        pm_enum = PackageManager(package_manager.lower())
-    except ValueError:
-        pm_enum = PackageManager.AUTO
-
-    path_env = os.environ.get("PATH", "")
     path_dirs = [d for d in path_env.split(os.pathsep) if d and os.path.isdir(d)]
 
     executables_set = set()
@@ -206,3 +194,27 @@ def list_path_executables(package_manager: str = "auto") -> str:
     }
 
     return json.dumps(output, indent=2)
+
+
+def list_path_executables(package_manager: str = "auto") -> str:
+    """Exposes executables in the system PATH variable in a machine readable JSON format,
+
+    categorizing binaries into managed (installed via package manager) and unmanaged files.
+
+    Args:
+        package_manager: Package manager to query ("auto", "apt", "dnf", "dpkg", "rpm", "pacman", or "none").
+
+    Returns:
+        JSON string containing "managed" list of {"package": ..., "binary": ...} and "unmanaged" list of binary paths.
+    """
+    try:
+        pm_enum = PackageManager(package_manager.lower())
+    except (ValueError, AttributeError):
+        pm_enum = PackageManager.AUTO
+
+    path_env = os.environ.get("PATH", "")
+    return _list_path_executables_cached(pm_enum.value, path_env)
+
+
+list_path_executables.cache_clear = _list_path_executables_cached.cache_clear  # type: ignore[attr-defined]
+list_path_executables.cache_info = _list_path_executables_cached.cache_info  # type: ignore[attr-defined]
