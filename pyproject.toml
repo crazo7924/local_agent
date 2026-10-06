@@ -11,6 +11,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+dev = [
+    "ruff>=0.1.0",
+    "pytest>=8.0.0",
+]
 ollama = ["ollama>=0.6.1"]
 openai = ["openai>=1.0.0"]
 anthropic = ["anthropic>=0.18.0"]
@@ -31,6 +35,6 @@ where = ["."]
 
 [dependency-groups]
 dev = [
-    "ruff>=0.14.8",
+    "ruff>=0.1.0",
     "pytest>=8.0.0",
 ]
