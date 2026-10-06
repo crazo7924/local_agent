@@ -4,7 +4,6 @@ import os
 import shutil
 import subprocess
 from enum import Enum
-from typing import Dict, List, Optional
 
 
 class PackageManager(str, Enum):
@@ -17,7 +16,7 @@ class PackageManager(str, Enum):
     NONE = "none"
 
 
-def _query_dpkg(binaries: List[str]) -> Dict[str, str]:
+def _query_dpkg(binaries: list[str]) -> dict[str, str]:
     """Query dpkg-query -S for a list of binaries."""
     mapping = {}
     if not shutil.which("dpkg-query") or not binaries:
@@ -30,7 +29,8 @@ def _query_dpkg(binaries: List[str]) -> Dict[str, str]:
         chunk = binaries[i : i + chunk_size]
         try:
             res = subprocess.run(
-                ["dpkg-query", "-S"] + chunk,
+                ["dpkg-query", "-S", *chunk],
+                check=False,
                 capture_output=True,
                 text=True,
             )
@@ -45,7 +45,7 @@ def _query_dpkg(binaries: List[str]) -> Dict[str, str]:
     return mapping
 
 
-def _query_rpm(binaries: List[str]) -> Dict[str, str]:
+def _query_rpm(binaries: list[str]) -> dict[str, str]:
     """Query rpm -qf for binaries."""
     mapping = {}
     if not shutil.which("rpm") or not binaries:
@@ -56,7 +56,8 @@ def _query_rpm(binaries: List[str]) -> Dict[str, str]:
         chunk = binaries[i : i + chunk_size]
         try:
             res = subprocess.run(
-                ["rpm", "-qf", "--queryformat", "%{FILENAMES}\t%{NAME}\n"] + chunk,
+                ["rpm", "-qf", "--queryformat", "%{FILENAMES}\t%{NAME}\n", *chunk],
+                check=False,
                 capture_output=True,
                 text=True,
             )
@@ -72,7 +73,7 @@ def _query_rpm(binaries: List[str]) -> Dict[str, str]:
     return mapping
 
 
-def _query_dnf(binaries: List[str], chunk_size: int = 500) -> Dict[str, str]:
+def _query_dnf(binaries: list[str]) -> dict[str, str]:
     """Query package manager for RPM-based systems (using fast rpm query first if available)."""
     if shutil.which("rpm"):
         return _query_rpm(binaries)
@@ -81,43 +82,34 @@ def _query_dnf(binaries: List[str], chunk_size: int = 500) -> Dict[str, str]:
     if not shutil.which("dnf") or not binaries:
         return mapping
 
+    chunk_size = 50
     for i in range(0, len(binaries), chunk_size):
         chunk = binaries[i : i + chunk_size]
-        chunk_set = set(chunk)
-        cmd = ["dnf", "repoquery", "--installed"]
         for bin_path in chunk:
-            cmd.extend(["--file", bin_path])
-        cmd.extend(["--queryformat", "%{name}\t%{files}"])
-
-        try:
-            res = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-            )
-            if res.returncode == 0 and res.stdout:
-                current_pkg = None
-                for line in res.stdout.splitlines():
-                    line_str = line.strip()
-                    if not line_str:
-                        continue
-                    if "\t" in line_str:
-                        parts = line_str.split("\t", 1)
-                        current_pkg = parts[0].strip()
-                        rest = parts[1].strip()
-                        for token in rest.split():
-                            if token in chunk_set and current_pkg:
-                                mapping[token] = current_pkg
-                    elif current_pkg:
-                        for token in line_str.split():
-                            if token in chunk_set:
-                                mapping[token] = current_pkg
-        except Exception:
-            pass
+            try:
+                res = subprocess.run(
+                    [
+                        "dnf",
+                        "repoquery",
+                        "--installed",
+                        "--file",
+                        bin_path,
+                        "--queryformat",
+                        "%{name}",
+                    ],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                pkg = res.stdout.strip()
+                if res.returncode == 0 and pkg:
+                    mapping[bin_path] = pkg
+            except Exception:
+                pass
     return mapping
 
 
-def _query_pacman(binaries: List[str]) -> Dict[str, str]:
+def _query_pacman(binaries: list[str]) -> dict[str, str]:
     """Query pacman -Qo for binaries."""
     mapping = {}
     if not shutil.which("pacman") or not binaries:
@@ -128,7 +120,8 @@ def _query_pacman(binaries: List[str]) -> Dict[str, str]:
         chunk = binaries[i : i + chunk_size]
         try:
             res = subprocess.run(
-                ["pacman", "-Qo"] + chunk,
+                ["pacman", "-Qo", *chunk],
+                check=False,
                 capture_output=True,
                 text=True,
             )
@@ -142,7 +135,7 @@ def _query_pacman(binaries: List[str]) -> Dict[str, str]:
     return mapping
 
 
-def _detect_package_manager() -> Optional[PackageManager]:
+def _detect_package_manager() -> PackageManager | None:
     if shutil.which("dpkg-query"):
         return PackageManager.DPKG
     if shutil.which("dnf"):
