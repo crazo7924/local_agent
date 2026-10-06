@@ -34,7 +34,7 @@ def read_file(file_path: str) -> str:
         return f"Error reading file: {str(e)}"
 
 
-def launch_app(application_name: str, args: str) -> str:
+def launch_app(application_name: str, args: list[str] | str = "") -> str:
     """Launches a desktop application in the Linux environment.
 
     Supported shortcuts: 'chrome', 'vscode', 'terminal'.
@@ -52,10 +52,18 @@ def launch_app(application_name: str, args: str) -> str:
     }
 
     command = app_map.get(application_name.lower(), application_name)
-    command_with_args = command + " " + args
+
+    if isinstance(args, list):
+        args_list = args
+    elif isinstance(args, str) and args.strip():
+        args_list = args.split()
+    else:
+        args_list = []
+
+    cmd = [command] + args_list
 
     try:
-        subprocess.Popen(command_with_args, shell=True, start_new_session=True)
+        subprocess.Popen(cmd, shell=False, start_new_session=True)
         return f"Successfully launched {application_name} (PID: running in background)."
     except Exception as e:
         return f"Failed to launch {application_name}: {str(e)}"
