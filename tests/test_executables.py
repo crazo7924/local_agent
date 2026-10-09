@@ -3,7 +3,12 @@ import os
 import unittest
 from unittest.mock import MagicMock, patch
 
-from src.tools.executables import PackageManager, _query_dnf, _query_rpm, list_path_executables
+from src.tools.executables import (
+    PackageManager,
+    _query_dnf,
+    _query_rpm,
+    list_path_executables,
+)
 
 
 class TestListPathExecutables(unittest.TestCase):

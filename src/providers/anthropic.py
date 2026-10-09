@@ -11,7 +11,9 @@ from src.providers.utils import callable_to_anthropic_tool
 class AnthropicProvider(LLMProvider):
     """LLM provider wrapper for Anthropic / Claude API."""
 
-    def __init__(self, api_key: str | None = None, model_name: str = "claude-3-5-sonnet-20241022"):
+    def __init__(
+        self, api_key: str | None = None, model_name: str = "claude-3-5-sonnet-20241022"
+    ):
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         self.model_name = os.getenv("ANTHROPIC_MODEL", model_name)
 
@@ -32,7 +34,11 @@ class AnthropicProvider(LLMProvider):
         system_prompt = ""
         formatted_messages = []
         for msg in messages:
-            msg_dict = msg.model_dump(exclude_none=True) if isinstance(msg, ChatMessage) else dict(msg)
+            msg_dict = (
+                msg.model_dump(exclude_none=True)
+                if isinstance(msg, ChatMessage)
+                else dict(msg)
+            )
             role = msg_dict.get("role")
 
             if role == "system":
@@ -44,7 +50,9 @@ class AnthropicProvider(LLMProvider):
                         "content": [
                             {
                                 "type": "tool_result",
-                                "tool_call_id": msg_dict.get("tool_call_id", "tool_call_id"),
+                                "tool_call_id": msg_dict.get(
+                                    "tool_call_id", "tool_call_id"
+                                ),
                                 "content": msg_dict.get("content", ""),
                             }
                         ],

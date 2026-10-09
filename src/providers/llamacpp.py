@@ -38,7 +38,11 @@ class LlamaCppProvider(LLMProvider):
 
         formatted_messages = []
         for msg in messages:
-            msg_dict = msg.model_dump(exclude_none=True) if isinstance(msg, ChatMessage) else dict(msg)
+            msg_dict = (
+                msg.model_dump(exclude_none=True)
+                if isinstance(msg, ChatMessage)
+                else dict(msg)
+            )
 
             if msg_dict.get("role") == "assistant" and msg_dict.get("tool_calls"):
                 formatted_tc = []
