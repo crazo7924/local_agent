@@ -10,8 +10,12 @@ from src.providers.types import ChatMessage, LLMResponse, ProviderHealth, ToolCa
 class GeminiProvider(LLMProvider):
     """LLM provider wrapper for Google Gemini API."""
 
-    def __init__(self, api_key: str | None = None, model_name: str = "gemini-2.0-flash"):
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    def __init__(
+        self, api_key: str | None = None, model_name: str = "gemini-2.0-flash"
+    ):
+        self.api_key = (
+            api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        )
         self.model_name = os.getenv("GEMINI_MODEL", model_name)
 
     def chat(
@@ -30,7 +34,11 @@ class GeminiProvider(LLMProvider):
 
         prompt_parts = []
         for msg in messages:
-            msg_dict = msg.model_dump(exclude_none=True) if isinstance(msg, ChatMessage) else dict(msg)
+            msg_dict = (
+                msg.model_dump(exclude_none=True)
+                if isinstance(msg, ChatMessage)
+                else dict(msg)
+            )
             role = msg_dict.get("role", "user")
             content = msg_dict.get("content", "")
             prompt_parts.append(f"{role}: {content}")

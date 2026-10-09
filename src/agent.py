@@ -40,7 +40,9 @@ def run_agent_loop(
         if content:
             assistant_msg["content"] = content
         if tool_calls:
-            assistant_msg["tool_calls"] = [tc.model_dump(exclude_none=True) for tc in tool_calls]
+            assistant_msg["tool_calls"] = [
+                tc.model_dump(exclude_none=True) for tc in tool_calls
+            ]
         messages.append(assistant_msg)
 
         # CASE A: The Model wants to call tools
